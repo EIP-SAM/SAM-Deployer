@@ -71,9 +71,6 @@ For that, the script takes at least one argument : ./runAllTests.py -d sam_solut
 With the mandatory parameter `-d`, the script can find all tests in the target directory.
 
 There is a couple of other usefull optional parameters :
-
  `--cs` : perform a `make clean` before compiling each test.
-
- `--ce` : clean every test directory after each test (rm .o, Makefile and test's binary).
-
+ `--ce` : clean every test directory after each test (remove .o, Makefile and test's binary).
  `-h/--help` : display a reminder of every parameters avaible.
