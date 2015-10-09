@@ -61,3 +61,16 @@ Both *Unix* and *Windows* path style are valid, depending on the OS used
     ]
 }
 ```
+
+## Tests script
+
+The source/runAllTests.py file is a python script used for perform all tests in SAM Solution project.
+
+For that, the script takes at least one argument : ./runAllTests.py -d sam_solution/source/tests
+
+With the mandatory parameter `-d`, the script can find all tests the target directory.
+
+There is a couple of other usefull optional parameters :
+`--cs` : perform a `make clean` before compiling each test.
+`--ce` : clean every test directory after each test (rm .o, Makefile and test's binary).
+`-h/--help` : display an reminder of every parameters avaible.
