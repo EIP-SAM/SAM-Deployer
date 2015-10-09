@@ -62,7 +62,7 @@ Both *Unix* and *Windows* path style are valid, depending on the OS used
 }
 ```
 
-## Tests script
+## Unit tests execution
 
 The source/runAllTests.py file is a python script used for perform all tests in SAM Solution project.
 
