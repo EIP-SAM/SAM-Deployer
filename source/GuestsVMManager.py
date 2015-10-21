@@ -1,16 +1,25 @@
+import ntpath
 from VMController import *
+from ScriptsLibrary import *
 
 class GuestsVMManager:
     _verbose = None
     _configFile = None
     _listInstr = None
     _makeInstr = None
+    _scriptsLib = None
+    _SHARED_FOLDER_NAME = "sam"
+    _TMP_DIR = {
+        "linux" : "/tmp/",
+        "windows" : "C:\\Users\\Sam\\Desktop\\"
+    }
 
     def __init__(self, verbose, configFile, listInstr, makeInstr):
         self._verbose = verbose
         self._configFile = configFile
         self._listInstr = listInstr
         self._makeInstr = makeInstr
+        self._scriptsLib = ScriptsLibrary()
 
     def run(self):
         if (self._listInstr != None):
@@ -54,7 +63,7 @@ class GuestsVMManager:
     #
     ## --make management
     def make(self):
-        print("Make Instructions =\t" + str(self._makeInstr))
+        # print("Make Instructions =\t" + str(self._makeInstr))
 
         if (len(self._makeInstr["vm_aliases"]) == 1 and self._makeInstr["vm_aliases"] == ["all"]):
             vmAP = self.getAllVMAliasesAndPaths(self._configFile["vm-paths"])
@@ -66,18 +75,45 @@ class GuestsVMManager:
             for vmAlias in self._makeInstr["vm_aliases"]:
                 self.makeOnGuest(vmAlias, vmAP[vmAlias])
 
+    #
+    ## Execute --make on guests
     def makeOnGuest(self, vmAlias, vmPath):
         vm = VMController(vmPath)
 
-        print(vmAlias + "\t<--> " + str(vmPath))
+        print("Starting \"" + vmAlias + "\" virtual environment")
+        print("Location : \"" + vmPath + "\"")
+        print("Please wait...")
 
         vm.start()
-        # vm.enableSharedFolders()
-        # vm.addSharedFolder("sharedCode", "/home/nicolas")
+        vmOS = vm.getGuestOperatingSystem()
+        print("Virtual environment successfuly started")
 
-        input("Press Enter to continue...")
+        vm.enableSharedFolders()
 
-        # vm.removeSharedFolder("sharedCode")
+        for project in self._configFile["projects"]:
+            print("\tSharing project " + project["name"] + " with virtual environment")
+            print("\tLocation on host : \"" + project["root-folder"] + "\"")
+
+            vm.addSharedFolder(self._SHARED_FOLDER_NAME, project["root-folder"])
+            hostScriptLocation = self._scriptsLib.scripts[vmOS]["mount_shared_folder"]
+            guestScriptLocation = self._TMP_DIR[vmOS] + ntpath.basename(hostScriptLocation)
+            vm.copyFileFromHostToGuest(hostScriptLocation, guestScriptLocation)
+            vm.runProgramInGuest(guestScriptLocation)
+
+            input("\tPress Enter to continue...")
+
+            vm.deleteFileInGuest(guestScriptLocation)
+
+            hostScriptLocation = self._scriptsLib.scripts[vmOS]["unmount_shared_folder"]
+            guestScriptLocation = self._TMP_DIR[vmOS] + ntpath.basename(hostScriptLocation)
+            vm.copyFileFromHostToGuest(hostScriptLocation, guestScriptLocation)
+            vm.runProgramInGuest(guestScriptLocation)
+            vm.deleteFileInGuest(guestScriptLocation)
+            vm.removeSharedFolder(self._SHARED_FOLDER_NAME)
+            print()
+
+        print("Pausing virtual environment")
+        print("Please wait...")
         vm.suspend()
-
-        # print("finished\n")
+        print("Virtual environment successfuly paused")
+        print()

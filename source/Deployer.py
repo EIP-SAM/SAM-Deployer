@@ -72,6 +72,8 @@ class Deployer:
                         print("Unrecognized arguments " + args["make"][0] + " " + args["make"][1])
                         exit
 
+    #
+    ## Deploy compilation & execution scripts + Qt projects
     def run(self):
         with open(self._infile) as configFile:
             configJson = json.load(configFile)
@@ -79,6 +81,7 @@ class Deployer:
 
         print("Verbose =\t\t" + str(self._verbose))
         print("Infile =\t\t" + self._infile)
+        print()
 
         guestsVMs.run()
 
