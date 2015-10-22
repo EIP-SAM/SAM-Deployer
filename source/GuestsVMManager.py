@@ -13,12 +13,14 @@ class GuestsVMManager:
         "linux" : "/tmp/",
         "windows" : "C:\\Users\\Sam\\Desktop\\"
     }
+    _testsInstr = None
 
-    def __init__(self, verbose, configFile, listInstr, makeInstr):
+    def __init__(self, verbose, configFile, listInstr, makeInstr, testsInstr):
         self._verbose = verbose
         self._configFile = configFile
         self._listInstr = listInstr
         self._makeInstr = makeInstr
+        self._testsInstr = testsInstr
         self._scriptsLib = ScriptsLibrary()
 
     def run(self):
@@ -26,6 +28,8 @@ class GuestsVMManager:
             self.list()
         if (self._makeInstr != None):
             self.make()
+        if (self._testsInstr != None):
+            self.compileAndExecuteUnitTests()
 
     #
     ## VM aliases and paths management
@@ -117,3 +121,10 @@ class GuestsVMManager:
         vm.suspend()
         print("Virtual environment successfuly paused")
         print()
+
+    #
+    ## --tests management
+    def compileAndExecuteUnitTests(self):
+        print("Hey, je suis sense lancer les vms une par une, compiler et executer les tests unitaires")
+        print("Mais en vrai je fais rien")
+        print("Pour l'instant")

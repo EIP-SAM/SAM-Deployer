@@ -12,16 +12,19 @@ class InputArgumentsParser:
     def parse(self):
         self._parser = argparse.ArgumentParser()
         self._parser.add_argument("-v", "--verbose",
-                            help = "increase output verbosity",
-                            action = "store_true")
+                                  help = "increase output verbosity",
+                                  action = "store_true")
         self._parser.add_argument("-i", "--infile",
-                            help = "use a special configuration file")
+                                  help = "use a special configuration file")
         self._parser.add_argument("-l", "--list",
-                            nargs = "*",
-                            help = "list the available virtual environments")
+                                  nargs = "*",
+                                  help = "list the available virtual environments")
         self._parser.add_argument("-m", "--make",
-                            nargs = "*",
-                            help = "provides commands similar to a UNIX Makefiles")
+                                  nargs = "*",
+                                  help = "provides commands similar to a UNIX Makefiles")
+        self._parser.add_argument("-t", "--tests",
+                                  help = "compile and execute Qt unit tests in the given directory",
+                                  action = "store_true")
         self._args = self._parser.parse_args()
 
     def getArguments(self):
@@ -35,5 +38,6 @@ class InputArgumentsParser:
             args.update({"list" : self._args.list})
         if (self._args.make != None):
             args.update({"make" : self._args.make})
-
+        if self._args.tests:
+            args.update({"tests" : True})
         return args

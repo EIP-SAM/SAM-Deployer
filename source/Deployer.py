@@ -8,12 +8,14 @@ class Deployer:
     _infile = None
     _listInstr = None
     _makeInstr = None
+    _testsInstr = None
 
     def __init__(self, args):
         self.interpretVerboseArg(args)
         self.interpretInfileArg(args)
         self.interpretListArgs(args)
         self.interpretMakeArgs(args)
+        self.interpretTestsArg(args)
 
     #
     ## Command line arguments interpretation
@@ -72,12 +74,16 @@ class Deployer:
                         print("Unrecognized arguments " + args["make"][0] + " " + args["make"][1])
                         exit
 
+    def interpretTestsArg(self, args):
+        self._testsInstr = True if "tests" in args else False
+
     #
     ## Deploy compilation & execution scripts + Qt projects
     def run(self):
         with open(self._infile) as configFile:
             configJson = json.load(configFile)
-        guestsVMs = GuestsVMManager(self._verbose, configJson, self._listInstr, self._makeInstr)
+        guestsVMs = GuestsVMManager(self._verbose, configJson, self._listInstr,
+                                    self._makeInstr, self._testsInstr)
 
         print("Verbose =\t\t" + str(self._verbose))
         print("Infile =\t\t" + self._infile)
