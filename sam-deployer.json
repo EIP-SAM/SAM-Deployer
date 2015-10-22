@@ -1,8 +1,0 @@
-{
-    "vm-paths" :
-    [
-	"/home/nicolas/Bibliotheque/VMware/SAM-Deployer/Windows 7 SP1 x64 Pro/Windows 7 SP1 x64 Pro.vmx",
-	"/home/nicolas/Bibliotheque/VMware/SAM-Deployer/Debian 7 x86_64/Debian 7 x86_64.vmx"
-    ],
-    "root-qt-code-directory" : "../.."
-}
