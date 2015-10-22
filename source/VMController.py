@@ -1,77 +1,98 @@
 import os
 import sys
 import platform
+import ntpath
 from io import StringIO
 from subprocess import call
 from subprocess import check_output
 
 class VMController:
+    _USERNAME = "sam"
+    _PASSWORD = "s@m"
+    _TMP_DIR = {
+        "linux" : "/tmp/",
+        "windows" : "C:\\Users\\Sam\\Desktop\\"
+    }
+
     _vmxPath = None
-    _username = "sam"
-    _password = "s@m"
+    _os = None
 
     def __init__(self, vmxPath):
         self._vmxPath = vmxPath
 
     def start(self):
-        call(["vmrun", "start", self._vmxPath])
+        return call(["vmrun", "start", self._vmxPath]) == 0
 
     def suspend(self):
-        call(["vmrun", "suspend", self._vmxPath])
+        return call(["vmrun", "suspend", self._vmxPath]) == 0
 
-    def getGuestOperatingSystem(self):
+    def _getGuestOperatingSystem(self):
         path = self.readEnvironmentVariable("PATH")
-        if (type(path) is str):
-            if (len(path) > 0):
-                if (path[0] == '/'):
-                    return "linux"
-                else:
-                    return "windows"
+        if ((type(path) is str) and (len(path) > 0)):
+            if (path[0] == '/'):
+                return "linux"
+            else:
+                return "windows"
         return None
 
+    def os(self):
+        self._os = self._os if self._os != None else self._getGuestOperatingSystem()
+        return self._os
+
     def readEnvironmentVariable(self, varName):
-        varContent = check_output(["vmrun", "-gu", self._username, "-gp", self._password,
-                                   "readVariable", self._vmxPath, "guestEnv", varName,
-                                   ";", "exit", "0"])
-        return varContent.decode("utf-8")
+        return check_output(["vmrun", "-gu", self._USERNAME, "-gp", self._PASSWORD,
+                             "readVariable", self._vmxPath, "guestEnv", varName,
+                             ";", "exit", "0"]).decode("utf-8")
+
+    def executeProgramInGuestFromHost(self, hostProgramPath):
+        guestProgramPath = self._TMP_DIR[self.os()] + ntpath.basename(hostProgramPath)
+
+        if (self.copyFileFromHostToGuest(hostProgramPath, guestProgramPath)):
+            ret = self.runProgramInGuest(guestProgramPath)
+            if (self.deleteFileInGuest(guestProgramPath) == False):
+                print("Error: An error occured while deleting temporary program in guest")
+            return ret
+        else:
+            print("Error: An error occured while copying temporary program in guest")
+        return None
 
     def copyFileFromHostToGuest(self, hostPath, guestPath):
-        call(["vmrun", "-gu", self._username, "-gp", self._password,
-              "copyFileFromHostToGuest", self._vmxPath, hostPath, guestPath])
+        return call(["vmrun", "-gu", self._USERNAME, "-gp", self._PASSWORD,
+                     "copyFileFromHostToGuest", self._vmxPath, hostPath, guestPath]) == 0
 
     def copyFileFromGuestToHost(self, guestPath, hostPath):
-        call(["vmrun", "-gu", self._username, "-gp", self._password,
-              "copyFileFromGuestToHost", self._vmxPath, guestPath, hostPath])
+        return call(["vmrun", "-gu", self._USERNAME, "-gp", self._PASSWORD,
+                     "copyFileFromGuestToHost", self._vmxPath, guestPath, hostPath]) == 0
 
     def deleteFileInGuest(self, filePath):
-        call(["vmrun", "-gu", self._username, "-gp", self._password,
-              "deleteFileInGuest", self._vmxPath, filePath])
+        return call(["vmrun", "-gu", self._USERNAME, "-gp", self._PASSWORD,
+                     "deleteFileInGuest", self._vmxPath, filePath]) == 0
 
     def directoryExistsInGuest(self, directoryPath):
-        call(["vmrun", "-gu", self._username, "-gp", self._password,
-              "directoryExistsInGuest", directoryPath])
+        return call(["vmrun", "-gu", self._USERNAME, "-gp", self._PASSWORD,
+                     "directoryExistsInGuest", directoryPath]) == 0
 
     def createDirectoryInGuest(self, directoryPath):
-        call(["vmrun", "-gu", self._username, "-gp", self._password,
-              "createDirectoryInGuest", directoryPath])
+        return call(["vmrun", "-gu", self._USERNAME, "-gp", self._PASSWORD,
+                     "createDirectoryInGuest", directoryPath]) == 0
 
     def deleteDirectoryInGuest(self, directoryPath):
-        call(["vmrun", "-gu", self._username, "-gp", self._password,
-              "deleteDirectoryInGuest", directoryPath])
+        return call(["vmrun", "-gu", self._USERNAME, "-gp", self._PASSWORD,
+                     "deleteDirectoryInGuest", directoryPath]) == 0
 
     def enableSharedFolders(self):
-        call(["vmrun", "enableSharedFolders", self._vmxPath])
+        return call(["vmrun", "enableSharedFolders", self._vmxPath]) == 0
 
     def addSharedFolder(self, shareName, hostPath):
-        call(["vmrun", "addSharedFolder", self._vmxPath, shareName, hostPath])
+        return call(["vmrun", "addSharedFolder", self._vmxPath, shareName, hostPath]) == 0
 
     def removeSharedFolder(self, shareName):
-        call(["vmrun", "removeSharedFolder", self._vmxPath, shareName])
+        return call(["vmrun", "removeSharedFolder", self._vmxPath, shareName]) == 0
 
     def runProgramInGuest(self, programPath):
-        call(["vmrun", "-gu", self._username, "-gp", self._password,
-              "runProgramInGuest", self._vmxPath, programPath])
+        return call(["vmrun", "-gu", self._USERNAME, "-gp", self._PASSWORD,
+                     "runProgramInGuest", self._vmxPath, programPath])
 
     def runScriptInGuest(self, interpreterPath, scriptPath):
-        call(["vmrun", "-gu", self._username, "-gp", self._password,
-              "runScriptInGuest", self._vmxPath, interpreterPath, scriptPath])
+        return call(["vmrun", "-gu", self._USERNAME, "-gp", self._PASSWORD,
+                     "runScriptInGuest", self._vmxPath, interpreterPath, scriptPath])
