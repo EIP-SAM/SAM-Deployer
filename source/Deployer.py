@@ -86,8 +86,7 @@ class Deployer:
                                     self._makeInstr, self._testsInstr)
 
         print("Verbose =\t\t" + str(self._verbose))
-        print("Infile =\t\t" + self._infile)
-        print()
+        print("Infile =\t\t" + self._infile + "\n")
 
         guestsVMs.run()
 

@@ -1,18 +1,14 @@
-import ntpath
 from VMController import *
 from ScriptsLibrary import *
 
 class GuestsVMManager:
+    _SHARED_FOLDER_NAME = "sam" # Don't forgot to update the other occurences in `scripts_library`
+
     _verbose = None
     _configFile = None
     _listInstr = None
     _makeInstr = None
     _scriptsLib = None
-    _SHARED_FOLDER_NAME = "sam"
-    _TMP_DIR = {
-        "linux" : "/tmp/",
-        "windows" : "C:\\Users\\Sam\\Desktop\\"
-    }
     _testsInstr = None
 
     def __init__(self, verbose, configFile, listInstr, makeInstr, testsInstr):
@@ -71,47 +67,45 @@ class GuestsVMManager:
                 self.makeOnGuest(vmAlias, vmAP[vmAlias])
 
     #
-    ## Execute --make on guests
+    ## Compile each project on each guest
     def makeOnGuest(self, vmAlias, vmPath):
         vm = VMController(vmPath)
 
-        print("Starting \"" + vmAlias + "\" virtual environment")
+        print("######### Starting \"" + vmAlias + "\" virtual environment #########")
         print("Location : \"" + vmPath + "\"")
         print("Please wait...")
 
-        vm.start()
-        vmOS = vm.getGuestOperatingSystem()
-        print("Virtual environment successfuly started")
+        if (vm.start()):
+            print("Virtual environment successfuly started")
 
-        vm.enableSharedFolders()
+            if (vm.enableSharedFolders()):
+                print("Shared folders successfuly enabled on guest\n")
 
-        for project in self._configFile["projects"]:
-            print("\tSharing project " + project["name"] + " with virtual environment")
-            print("\tLocation on host : \"" + project["root-folder"] + "\"")
+                for project in self._configFile["projects"]:
+                    self.makeProjectOnGuest(vm, project)
+                    print()
+            else:
+                print()
 
-            vm.addSharedFolder(self._SHARED_FOLDER_NAME, project["root-folder"])
-            hostScriptLocation = self._scriptsLib.scripts[vmOS]["mount_shared_folder"]
-            guestScriptLocation = self._TMP_DIR[vmOS] + ntpath.basename(hostScriptLocation)
-            vm.copyFileFromHostToGuest(hostScriptLocation, guestScriptLocation)
-            vm.runProgramInGuest(guestScriptLocation)
+            print("Pausing virtual environment\nPlease wait...")
+            if (vm.suspend()):
+                print("Virtual environment successfuly paused\n")
+            else:
+                print("Error: An error occured while trying to pause guest\n")
 
-            input("\tPress Enter to continue...")
+    #
+    ## Compile one project on one guest
+    def makeProjectOnGuest(self, vm, project):
+        print("%%%%%%%%% Sharing project " + project["name"] + " with virtual environment %%%%%%%%%")
+        print("Location on host : \"" + project["root-folder"] + "\"")
 
-            vm.deleteFileInGuest(guestScriptLocation)
+        vm.addSharedFolder(self._SHARED_FOLDER_NAME, project["root-folder"])
+        vm.executeProgramInGuestFromHost(self._scriptsLib.scripts[vm.os()]["mount_shared_folder"])
 
-            hostScriptLocation = self._scriptsLib.scripts[vmOS]["unmount_shared_folder"]
-            guestScriptLocation = self._TMP_DIR[vmOS] + ntpath.basename(hostScriptLocation)
-            vm.copyFileFromHostToGuest(hostScriptLocation, guestScriptLocation)
-            vm.runProgramInGuest(guestScriptLocation)
-            vm.deleteFileInGuest(guestScriptLocation)
-            vm.removeSharedFolder(self._SHARED_FOLDER_NAME)
-            print()
+        # input("Press Enter to continue...")
 
-        print("Pausing virtual environment")
-        print("Please wait...")
-        vm.suspend()
-        print("Virtual environment successfuly paused")
-        print()
+        vm.executeProgramInGuestFromHost(self._scriptsLib.scripts[vm.os()]["unmount_shared_folder"])
+        vm.removeSharedFolder(self._SHARED_FOLDER_NAME)
 
     #
     ## --tests management
