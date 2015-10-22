@@ -24,7 +24,7 @@ class GuestsVMManager:
             self.list()
         if (self._makeInstr != None):
             self.make()
-        if (self._testsInstr != None):
+        if (self._testsInstr):
             self.compileAndExecuteUnitTests()
 
     #
@@ -34,8 +34,9 @@ class GuestsVMManager:
 
         for vmAlias in vmAliases:
             vmDict[vmAlias] = None
-            for vm in vms:
-                if ((vm["alias"] == vmAlias) and (vm["path"] is not None)):
+            for vm in virtualMachines:
+                if ((vm["alias"] is not None) and
+                    (vm["path"] is not None) and (vm["alias"] == vmAlias)):
                     vmDict[vmAlias] = vm["path"]
                     break
         return vmDict
@@ -43,11 +44,23 @@ class GuestsVMManager:
     #
     ## --list management
     def list(self):
-        print("List Instructions =\t" + str(self._listInstr))
+        print("List Instructions =\t" + str(self._listInstr) + "\n")
 
-        vmAP = self.linkVMAliasesAndPaths(self._listInstr["vm_aliases"],
-                                          self._configFile["vm-paths"])
-        print(vmAP)
+        if (len(self._listInstr) == 1 and self._listInstr[0] == "all"):
+            print("######### Listing all virtual environments #########")
+            for vm in self._configFile["virtual-machines"]:
+                if ((vm["alias"] != None) and (vm["path"] != None)):
+                    print("Virtual environment : \"" + vm["alias"] + "\"")
+                    print("Location : \"" + vm["path"] + "\"\n")
+                else:
+                    print("Error: Broken `virtual-machine` object in configuration file")
+        else:
+            vmAP = self.linkVMAliasesAndPaths(self._listInstr,
+                                              self._configFile["virtual-machines"])
+            print("######### Listing specified virtual environment(s) #########")
+            for vmAlias in self._makeInstr["vm_aliases"]:
+                print("Virtual environment : \"" + vmAlias + "\"")
+                print("Location : \"" + vmPath + "\"\n")
 
     #
     ## --make management
