@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2
 
 import sys, getopt, os
 from subprocess import call, PIPE
