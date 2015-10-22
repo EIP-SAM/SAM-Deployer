@@ -1,11 +1,15 @@
 {
-    "vm-paths" :
-    [
-	"/home/nicolas/Bibliotheque/VMware/SAM-Deployer/Windows 7 SP1 x64 Pro/Windows 7 SP1 x64 Pro.vmx",
-	"/home/nicolas/Bibliotheque/VMware/SAM-Deployer/Debian 7 x86_64/Debian 7 x86_64.vmx"
+    "virtual-machines" : [
+	{
+	    "alias" : "Windows 7 x64",
+	    "path" : "/home/nicolas/Bibliotheque/VMware/SAM-Deployer/Windows 7 SP1 x64 Pro/Windows 7 SP1 x64 Pro.vmx"
+	},
+	{
+	    "alias" : "Debian 7 x86_64",
+	    "path" : "/home/nicolas/Bibliotheque/VMware/SAM-Deployer/Debian 7 x86_64/Debian 7 x86_64.vmx"
+	}
     ],
-    "projects" :
-    [
+    "projects" : [
 	{
 	    "name" : "SAM-Solution Server",
 	    "qt-project-file" : "/home/nicolas/TAF/eip/SAM-Solution/source/server/server.pro",

@@ -33,26 +33,15 @@ class GuestsVMManager:
 
     #
     ## VM aliases and paths management
-    def linkVMAliasesAndPaths(self, vmAliases, vmPaths):
+    def linkVMAliasesAndPaths(self, vmAliases, virtualMachines):
         vmDict = {}
 
         for vmAlias in vmAliases:
             vmDict[vmAlias] = None
-            for vmPath in vmPaths:
-                path, file = os.path.split(vmPath)
-                fileName, fileExtension = os.path.splitext(file)
-                if (fileName == vmAlias):
-                    vmDict[vmAlias] = vmPath
+            for vm in vms:
+                if ((vm["alias"] == vmAlias) and (vm["path"] is not None)):
+                    vmDict[vmAlias] = vm["path"]
                     break
-        return vmDict
-
-    def getAllVMAliasesAndPaths(self, vmPaths):
-        vmDict = {}
-
-        for vmPath in vmPaths:
-            path, file = os.path.split(vmPath)
-            fileName, fileExtension = os.path.splitext(file)
-            vmDict[fileName] = vmPath
         return vmDict
 
     #
@@ -67,15 +56,17 @@ class GuestsVMManager:
     #
     ## --make management
     def make(self):
-        # print("Make Instructions =\t" + str(self._makeInstr))
+        print("Make Instructions =\t" + str(self._makeInstr) + "\n")
 
         if (len(self._makeInstr["vm_aliases"]) == 1 and self._makeInstr["vm_aliases"] == ["all"]):
-            vmAP = self.getAllVMAliasesAndPaths(self._configFile["vm-paths"])
-            for vmAlias in vmAP:
-                self.makeOnGuest(vmAlias, vmAP[vmAlias])
+            for vm in self._configFile["virtual-machines"]:
+                if ((vm["alias"] != None) and (vm["path"] != None)):
+                    self.makeOnGuest(vm["alias"], vm["path"])
+                else:
+                    print("Error: Broken `virtual-machine` object in configuration file")
         else:
             vmAP = self.linkVMAliasesAndPaths(self._makeInstr["vm_aliases"],
-                                              self._configFile["vm-paths"])
+                                              self._configFile["virtual-machines"])
             for vmAlias in self._makeInstr["vm_aliases"]:
                 self.makeOnGuest(vmAlias, vmAP[vmAlias])
 
