@@ -15,5 +15,8 @@ class ScriptsLibrary:
         "windows" : {
             "mount_shared_folder" : _windowsScriptsDir + "/mount_shared_folder.bat",
             "unmount_shared_folder" : _windowsScriptsDir + "/unmount_shared_folder.bat",
-        }
+        },
+
+        # all
+        "make_project" : _scriptsLibraryDir + "/make_project.py"
     }

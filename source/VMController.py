@@ -11,7 +11,7 @@ class VMController:
     _PASSWORD = "s@m"
     _TMP_DIR = {
         "linux" : "/tmp/",
-        "windows" : "C:\\Users\\Sam\\Desktop\\"
+        "windows" : "C:\\Users\\Sam\\AppData\\Local\\Temp\\"
     }
 
     _vmxPath = None
@@ -56,6 +56,18 @@ class VMController:
             print("Error: An error occured while copying temporary program in guest")
         return None
 
+    def executeScriptInGuestFromHost(self, guestInterpreterPath, hostScriptPath):
+        guestScriptPath = self._TMP_DIR[self.os()] + ntpath.basename(hostScriptPath)
+
+        if (self.copyFileFromHostToGuest(hostScriptPath, guestScriptPath)):
+            ret = self.runProgramInGuest(guestInterpreterPath, guestScriptPath)
+            if (self.deleteFileInGuest(guestScriptPath) == False):
+                print("Error: An error occured while deleting temporary script in guest")
+            return ret
+        else:
+            print("Error: An error occured while copying temporary script in guest")
+        return None
+
     def copyFileFromHostToGuest(self, hostPath, guestPath):
         return call(["vmrun", "-gu", self._USERNAME, "-gp", self._PASSWORD,
                      "copyFileFromHostToGuest", self._vmxPath, hostPath, guestPath]) == 0
@@ -89,10 +101,14 @@ class VMController:
     def removeSharedFolder(self, shareName):
         return call(["vmrun", "removeSharedFolder", self._vmxPath, shareName]) == 0
 
-    def runProgramInGuest(self, programPath):
-        return call(["vmrun", "-gu", self._USERNAME, "-gp", self._PASSWORD,
-                     "runProgramInGuest", self._vmxPath, programPath])
+    def runProgramInGuest(self, programPath, *programParameters):
+        callArgs = ["vmrun", "-gu", self._USERNAME, "-gp", self._PASSWORD,
+                    "runProgramInGuest", self._vmxPath, programPath]
 
-    def runScriptInGuest(self, interpreterPath, scriptPath):
+        for programParameter in programParameters:
+            callArgs.append(programParameter)
+        return call(callArgs)
+
+    def runScriptInGuest(self, interpreterPath, scriptContent):
         return call(["vmrun", "-gu", self._USERNAME, "-gp", self._PASSWORD,
-                     "runScriptInGuest", self._vmxPath, interpreterPath, scriptPath])
+                     "runScriptInGuest", self._vmxPath, interpreterPath, scriptContent])

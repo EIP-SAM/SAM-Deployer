@@ -3,6 +3,10 @@ from ScriptsLibrary import *
 
 class GuestsVMManager:
     _SHARED_FOLDER_NAME = "sam" # Don't forgot to update the other occurences in `scripts_library`
+    _PYTHON_INTERPRETER = {
+        "linux" : "/usr/bin/python3",
+        "windows" : "C:\\Python3\\python.exe"
+    }
 
     _verbose = None
     _configFile = None
@@ -115,6 +119,8 @@ class GuestsVMManager:
         vm.addSharedFolder(self._SHARED_FOLDER_NAME, project["root-folder"])
         vm.executeProgramInGuestFromHost(self._scriptsLib.scripts[vm.os()]["mount_shared_folder"])
 
+        vm.executeScriptInGuestFromHost(self._PYTHON_INTERPRETER[vm.os()],
+                                        self._scriptsLib.scripts["make_project"])
         # input("Press Enter to continue...")
 
         vm.executeProgramInGuestFromHost(self._scriptsLib.scripts[vm.os()]["unmount_shared_folder"])
