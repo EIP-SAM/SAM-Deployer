@@ -56,11 +56,11 @@ class VMController:
             print("Error: An error occured while copying temporary program in guest")
         return None
 
-    def executeScriptInGuestFromHost(self, guestInterpreterPath, hostScriptPath):
+    def executeScriptInGuestFromHost(self, guestInterpreterPath, hostScriptPath, *scriptParameters):
         guestScriptPath = self._TMP_DIR[self.os()] + ntpath.basename(hostScriptPath)
 
         if (self.copyFileFromHostToGuest(hostScriptPath, guestScriptPath)):
-            ret = self.runProgramInGuest(guestInterpreterPath, guestScriptPath)
+            ret = self.runProgramInGuest(guestInterpreterPath, guestScriptPath, *scriptParameters)
             if (self.deleteFileInGuest(guestScriptPath) == False):
                 print("Error: An error occured while deleting temporary script in guest")
             return ret
@@ -103,7 +103,7 @@ class VMController:
 
     def runProgramInGuest(self, programPath, *programParameters):
         callArgs = ["vmrun", "-gu", self._USERNAME, "-gp", self._PASSWORD,
-                    "runProgramInGuest", self._vmxPath, programPath]
+                    "runProgramInGuest", self._vmxPath, "-interactive", programPath]
 
         for programParameter in programParameters:
             callArgs.append(programParameter)

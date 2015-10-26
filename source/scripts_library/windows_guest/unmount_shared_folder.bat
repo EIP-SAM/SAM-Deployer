@@ -1,1 +1,0 @@
-net use z: /delete > C:\Users\Sam\Desktop\output.txt 2>&1

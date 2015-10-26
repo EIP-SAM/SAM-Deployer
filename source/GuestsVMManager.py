@@ -95,13 +95,13 @@ class GuestsVMManager:
         if (vm.start()):
             print("Virtual environment successfuly started")
 
-            if (vm.enableSharedFolders()):
+            if (not vm.enableSharedFolders()):
+                print("Trying anyway...\n")
+            else:
                 print("Shared folders successfuly enabled on guest\n")
 
-                for project in self._configFile["projects"]:
-                    self.makeProjectOnGuest(vm, project)
-                    print()
-            else:
+            for project in self._configFile["projects"]:
+                self.makeProjectOnGuest(vm, vmAlias, project)
                 print()
 
             print("Pausing virtual environment\nPlease wait...")
@@ -112,19 +112,44 @@ class GuestsVMManager:
 
     #
     ## Compile one project on one guest
-    def makeProjectOnGuest(self, vm, project):
+    def makeProjectOnGuest(self, vm, vmAlias, project):
         print("%%%%%%%%% Sharing project " + project["name"] + " with virtual environment %%%%%%%%%")
         print("Location on host : \"" + project["root-folder"] + "\"")
 
-        vm.addSharedFolder(self._SHARED_FOLDER_NAME, project["root-folder"])
-        vm.executeProgramInGuestFromHost(self._scriptsLib.scripts[vm.os()]["mount_shared_folder"])
+        if (not self.projectConfigIsValid(project["qt-project-file"], project["root-folder"])):
+            print("Error: `qt-project-file` is not a valid path under `root-folder`\n" +
+                  "`qt-project-file`: \"" + project["qt-project-file"] + "\"\n" +
+                  "`root-folder`: \"" + project["root-folder"] + "\"")
+            return
+        fileName, fileExtension = os.path.splitext(project["qt-project-file"])
+        if (fileExtension != ".pro"):
+            print("Warning: Qt project file, '" + fileName + fileExtension +
+                  "', is supposed to have a '.pro' extension. This may not work")
+
+        if (not vm.addSharedFolder(self._SHARED_FOLDER_NAME, project["root-folder"])):
+            print("Trying anyway...")
+        vm.executeScriptInGuestFromHost(self._PYTHON_INTERPRETER[vm.os()],
+                                        self._scriptsLib.scripts["mount_shared_folder"])
+
+        buildDir = "build_" + project["name"].replace(" ", "-") + "_" + vmAlias.replace(" ", "-")
+        projectFile = project["qt-project-file"][len(project["root-folder"]) + 1:]
+        vm.executeScriptInGuestFromHost(self._PYTHON_INTERPRETER[vm.os()],
+                                        self._scriptsLib.scripts["make_project"],
+                                        projectFile, buildDir)
 
         vm.executeScriptInGuestFromHost(self._PYTHON_INTERPRETER[vm.os()],
-                                        self._scriptsLib.scripts["make_project"])
-        # input("Press Enter to continue...")
-
-        vm.executeProgramInGuestFromHost(self._scriptsLib.scripts[vm.os()]["unmount_shared_folder"])
+                                        self._scriptsLib.scripts["unmount_shared_folder"])
         vm.removeSharedFolder(self._SHARED_FOLDER_NAME)
+
+    #
+    ## Check if "project" : { "root-folder", "qt-project-file" } paths are valid
+    def projectConfigIsValid(self, projectFilePath, projectRootFolder):
+        return ((projectFilePath != None and projectRootFolder != None) and
+                (type(projectFilePath) == str and type(projectRootFolder) == str) and
+                (len(projectFilePath) > 0 and len(projectRootFolder) > 0) and
+                (len(projectFilePath) > len(projectRootFolder)) and
+                (projectFilePath[:len(projectRootFolder)] == projectRootFolder) and
+                os.path.isfile(projectFilePath))
 
     #
     ## --tests management

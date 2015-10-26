@@ -5,8 +5,8 @@
 	    "path" : "/home/nicolas/Bibliotheque/VMware/SAM-Deployer/Windows 7 SP1 x64 Pro/Windows 7 SP1 x64 Pro.vmx"
 	},
 	{
-	    "alias" : "Debian 7 x86_64",
-	    "path" : "/home/nicolas/Bibliotheque/VMware/SAM-Deployer/Debian 7 x86_64/Debian 7 x86_64.vmx"
+	    "alias" : "Archlinux x86_64",
+	    "path" : "/home/nicolas/Bibliotheque/VMware/SAM-Deployer/Archlinux x86_64/Archlinux x86_64.vmx"
 	}
     ],
     "projects" : [
@@ -23,6 +23,12 @@
 	{
 	    "name" : "SAM-Solution User Client",
 	    "qt-project-file" : "/home/nicolas/TAF/eip/SAM-Solution/source/clients/admin/admin.pro",
+	    "root-folder" : "/home/nicolas/TAF/eip/SAM-Solution/source"
+	}
+    ],
+    "tests" : [
+	{
+	    "root-tests-folder" : "/home/nicolas/TAF/eip/SAM-Solution/source/tests",
 	    "root-folder" : "/home/nicolas/TAF/eip/SAM-Solution/source"
 	}
     ]
