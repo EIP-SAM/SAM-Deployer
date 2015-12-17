@@ -1,7 +1,12 @@
+import os
+import platform
+import socket
 from VMController import *
 from ScriptsLibrary import *
+from GuestStdoutReceiver import *
 
 class GuestsVMManager:
+    _HOST_TMP_DIR = "/tmp/" if platform.system() != "Windows" else os.environ["TMP"] + "\\"
     _SHARED_FOLDER_NAME = "sam" # Don't forgot to update the other occurences in `scripts_library`
     _PYTHON_INTERPRETER = {
         "linux" : "/usr/bin/python3",
@@ -87,6 +92,7 @@ class GuestsVMManager:
     ## Compile each project on each guest
     def makeOnGuest(self, vmAlias, vmPath):
         vm = VMController(vmPath)
+        hostPort = 42064
 
         print("######### Starting \"" + vmAlias + "\" virtual environment #########")
         print("Location : \"" + vmPath + "\"")
@@ -96,13 +102,21 @@ class GuestsVMManager:
             print("Virtual environment successfuly started")
 
             if (not vm.enableSharedFolders()):
-                print("Trying anyway...\n")
+                print("Trying anyway...")
             else:
-                print("Shared folders successfuly enabled on guest\n")
+                print("Shared folders successfuly enabled on guest")
 
+            hostIp = self.getHostIpAddress(vm)
+            hostIp = "" if hostIp == None else hostIp
+            guestStdout = GuestStdoutReceiver(hostIp, hostPort)
+
+            print()
             for project in self._configFile["projects"]:
-                self.makeProjectOnGuest(vm, vmAlias, project)
+                self.makeProjectOnGuest(vm, vmAlias, project, str(hostPort), hostIp)
                 print()
+
+            guestStdout.stop()
+            # print("GuestStdout stopped")
 
             print("Pausing virtual environment\nPlease wait...")
             if (vm.suspend()):
@@ -112,7 +126,7 @@ class GuestsVMManager:
 
     #
     ## Compile one project on one guest
-    def makeProjectOnGuest(self, vm, vmAlias, project):
+    def makeProjectOnGuest(self, vm, vmAlias, project, hostPort, hostIp):
         print("%%%%%%%%% Sharing project " + project["name"] + " with virtual environment %%%%%%%%%")
         print("Location on host : \"" + project["root-folder"] + "\"")
 
@@ -135,7 +149,7 @@ class GuestsVMManager:
         projectFile = project["qt-project-file"][len(project["root-folder"]) + 1:]
         vm.executeScriptInGuestFromHost(self._PYTHON_INTERPRETER[vm.os()],
                                         self._scriptsLib.scripts["make_project"],
-                                        projectFile, buildDir)
+                                        projectFile, buildDir, hostIp, hostPort)
 
         vm.executeScriptInGuestFromHost(self._PYTHON_INTERPRETER[vm.os()],
                                         self._scriptsLib.scripts["unmount_shared_folder"])
@@ -157,3 +171,48 @@ class GuestsVMManager:
         print("Hey, je suis sense lancer les vms une par une, compiler et executer les tests unitaires")
         print("Mais en vrai je fais rien")
         print("Pour l'instant")
+
+    def getHostIpAddress(self, vm):
+        port = 42021
+        guestIp = self.getGuestIpAddress(vm)
+
+        if (guestIp == None):
+            return None
+        if (vm.executeScriptInGuestFromHostNoWait(self._PYTHON_INTERPRETER[vm.os()],
+                                                  self._scriptsLib.scripts["get_host_ip_address"],
+                                                  guestIp, str(port)) == 0):
+            # print("Get host ip script launched")
+            if (vm.executeScriptInGuestFromHost(self._PYTHON_INTERPRETER[vm.os()],
+                                                self._scriptsLib.scripts["wait_for_host_ip"],
+                                                guestIp, str(port)) == 0):
+                # print("Get host ip script is ready")
+                clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                # print("Client socket created")
+                clientSocket.connect((guestIp, port))
+                # print("Connected")
+                clientSocket.send("host".encode("utf-8"))
+                hostIpBin = clientSocket.recv(32)
+                hostIp = str(hostIpBin.decode("utf-8"))
+                print("Host IP address is " + hostIp)
+                return hostIp
+        print("Warning: Failed to retrieve host ip address")
+        return None
+
+    def getGuestIpAddress(self, vm):
+        guestIpFilePath = vm.getTmpDirectory() + "ip_addr.txt"
+        hostTmpGuestIpFilePath = self._HOST_TMP_DIR + "ip_addr.txt"
+
+        if (vm.executeScriptInGuestFromHost(self._PYTHON_INTERPRETER[vm.os()],
+                                            self._scriptsLib.scripts["get_guest_ip_address"],
+                                            guestIpFilePath) == 0 and
+            vm.copyFileFromGuestToHost(guestIpFilePath, hostTmpGuestIpFilePath)):
+            guestIp = None
+            with open(hostTmpGuestIpFilePath, "r") as ipFile:
+                guestIp = ipFile.readline()
+            with open(hostTmpGuestIpFilePath, "w") as ipFile:
+                ipFile.truncate()
+            vm.deleteFileInGuest(guestIpFilePath)
+            print("Guest IP address is " + guestIp)
+            return guestIp
+        print("Warning: Failed to retrieve guest ip address")
+        return None

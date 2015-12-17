@@ -39,6 +39,9 @@ class VMController:
         self._os = self._os if self._os != None else self._getGuestOperatingSystem()
         return self._os
 
+    def getTmpDirectory(self):
+        return self._TMP_DIR[self.os()]
+
     def readEnvironmentVariable(self, varName):
         return check_output(["vmrun", "-gu", self._USERNAME, "-gp", self._PASSWORD,
                              "readVariable", self._vmxPath, "guestEnv", varName,
@@ -61,6 +64,19 @@ class VMController:
 
         if (self.copyFileFromHostToGuest(hostScriptPath, guestScriptPath)):
             ret = self.runProgramInGuest(guestInterpreterPath, guestScriptPath, *scriptParameters)
+            if (self.deleteFileInGuest(guestScriptPath) == False):
+                print("Error: An error occured while deleting temporary script in guest")
+            return ret
+        else:
+            print("Error: An error occured while copying temporary script in guest")
+        return None
+
+    def executeScriptInGuestFromHostNoWait(self, guestInterpreterPath,
+                                           hostScriptPath, *scriptParameters):
+        guestScriptPath = self._TMP_DIR[self.os()] + ntpath.basename(hostScriptPath)
+
+        if (self.copyFileFromHostToGuest(hostScriptPath, guestScriptPath)):
+            ret = self.runProgramInGuestNoWait(guestInterpreterPath, guestScriptPath, *scriptParameters)
             if (self.deleteFileInGuest(guestScriptPath) == False):
                 print("Error: An error occured while deleting temporary script in guest")
             return ret
@@ -101,14 +117,39 @@ class VMController:
     def removeSharedFolder(self, shareName):
         return call(["vmrun", "removeSharedFolder", self._vmxPath, shareName]) == 0
 
+    def _appendParameters(self, outputParameters, *inputParameters):
+        for inputParameter in inputParameters:
+            outputParameters.append(inputParameter)
+        return outputParameters
+
     def runProgramInGuest(self, programPath, *programParameters):
         callArgs = ["vmrun", "-gu", self._USERNAME, "-gp", self._PASSWORD,
-                    "runProgramInGuest", self._vmxPath, "-interactive", programPath]
+                    "runProgramInGuest", self._vmxPath, "-interactive", "-activeWindow",
+                    programPath]
 
-        for programParameter in programParameters:
-            callArgs.append(programParameter)
+        callArgs = self._appendParameters(callArgs, *programParameters)
+        ret = call(callArgs)
+        if (ret != 0):
+            for callArg in callArgs:
+                print(callArg, end=" ")
+            print()
+        return ret
+
+    def runProgramInGuestNoWait(self, programPath, *programParameters):
+        callArgs = ["vmrun", "-gu", self._USERNAME, "-gp", self._PASSWORD,
+                    "runProgramInGuest", self._vmxPath, "-interactive", "-activeWindow",
+                    "-noWait", programPath]
+
+        callArgs = self._appendParameters(callArgs, *programParameters)
         return call(callArgs)
+        ret = call(callArgs)
+        if (ret != 0):
+            for callArg in callArgs:
+                print(callArg, end=" ")
+            print()
+        return ret
 
     def runScriptInGuest(self, interpreterPath, scriptContent):
         return call(["vmrun", "-gu", self._USERNAME, "-gp", self._PASSWORD,
-                     "runScriptInGuest", self._vmxPath, interpreterPath, scriptContent])
+                     "runScriptInGuest", self._vmxPath, "-interactive", "-activeWindow",
+                     interpreterPath, scriptContent])
